@@ -37,7 +37,7 @@ namespace SistemaEstacionamientoGUI
             btnRetirar = new Button() { Text = "Retirar", Location = new Point(305, 20), Width = 85, BackColor = Color.LightCoral };
             btnRetirar.Click += BtnRetirar_Click;
 
-            // CONFIGURACIÓN DEL NUEVO BOTÓN
+            // CONFIGURACIÓN DE COBROS DEL DIA
             btnReporte = new Button() { Text = "Cobros del Día", Location = new Point(405, 20), Width = 130, BackColor = Color.LightSkyBlue };
             btnReporte.Click += BtnReporte_Click;
 
@@ -66,6 +66,7 @@ namespace SistemaEstacionamientoGUI
             // Cargar los datos al abrir
             CargarVehiculos();
         }
+        //METODO INGRESA
 
         private void BtnIngresar_Click(object sender, EventArgs e)
         {
@@ -98,7 +99,7 @@ namespace SistemaEstacionamientoGUI
                 }
             }
         }
-
+//METODO RETIRAR
         private void BtnRetirar_Click(object sender, EventArgs e)
         {
             string patente = txtPatente.Text.Trim();
@@ -134,7 +135,7 @@ namespace SistemaEstacionamientoGUI
                             }
                         }
                     }
-
+//METODO CALCULO HORAS
                     DateTime horaSalida = DateTime.Now;
                     double horasTotales = Math.Ceiling((horaSalida - horaEntrada).TotalHours);
                     if (horasTotales == 0) horasTotales = 1;
@@ -207,9 +208,9 @@ private void GridVehiculos_CellClick(object sender, DataGridViewCellEventArgs e)
     }
 
 
-    // ==========================================
+
     //  VENTANA DE REPORTES DEL DÍA
-    // ==========================================
+
     public class ReporteForm : Form
     {
         public ReporteForm(string conexionString)
