@@ -48,7 +48,10 @@ namespace SistemaEstacionamientoGUI
                 AllowUserToAddRows = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+           gridVehiculos.CellClick += GridVehiculos_CellClick;
 
+        lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
+        lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
             lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
 
             // Agregar controles a la ventana
@@ -169,7 +172,17 @@ namespace SistemaEstacionamientoGUI
             // ShowDialog() hace que se abra como una ventana emergente obligatoria (modal)
             ventanaReporte.ShowDialog(); 
         }
-
+    
+//EVENTO QUE SELECCIONA PATENTE
+private void GridVehiculos_CellClick(object sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex >= 0)
+        {
+            DataGridViewRow fila = gridVehiculos.Rows[e.RowIndex];
+            txtPatente.Text = fila.Cells["Patente"].Value.ToString();
+        }
+    }
+    
         private void CargarVehiculos()
         {
             using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
