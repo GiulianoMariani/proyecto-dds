@@ -6,10 +6,10 @@ namespace SistemaEstacionamientoGUI
 {
     public class GestorBaseDatos
     {
-        // Tu cadena de conexión a MySQL
+        
         private string cadenaConexion = "Server=localhost;Database=EstacionamientoDB;User ID=root;Password=negrito123;";
 
-        // 1. MODIFICADO: Ahora recibe también el tipo de vehículo
+        
         public void IngresarVehiculo(string patente, string tipoVehiculo)
         {
             using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
@@ -26,7 +26,7 @@ namespace SistemaEstacionamientoGUI
             }
         }
 
-        // 2. MODIFICADO: Ya no necesita recibir la tarifa desde fuera, la decide la BD según el tipo
+        
         public string RetirarVehiculo(string patente)
         {
             using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
@@ -96,7 +96,7 @@ namespace SistemaEstacionamientoGUI
             }
         }
 
-        // 3. MODIFICADO: Agregamos el Tipo a la consulta para que se vea en la grilla
+        //  Agregamos el Tipo a la consulta para que se vea en la BD
         public DataTable ObtenerVehiculosEstacionados()
         {
             using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
