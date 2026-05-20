@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SistemaEstacionamientoGUI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+67eed937f656ef91658dd978dca215a56a261631")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e2cd6c87050b6ac5132c88c7e298639e512ed691")]
 [assembly: System.Reflection.AssemblyProductAttribute("SistemaEstacionamientoGUI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SistemaEstacionamientoGUI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -2,268 +2,259 @@ using System;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 
 namespace SistemaEstacionamientoGUI
 {
     public class MainForm : Form
     {
-        // Controles de la interfaz principal
+        // Controles
         private TextBox txtPatente;
+        private ComboBox cmbTipoVehiculo;
         private Button btnIngresar;
         private Button btnRetirar;
-        private Button btnReporte; // Nuevo botón
+        private Button btnReporte;
         private DataGridView gridVehiculos;
         private Label lblMensaje;
+        private Panel pnlHeader; // Panel superior decorativo
 
-        // Configuración
-        private string cadenaConexion = "Server=localhost;Database=EstacionamientoDB;User ID=root;Password=negrito123;";
-        private decimal TarifaPorHora = 500.00m;
+        private GestorBaseDatos db = new GestorBaseDatos();
+
+        // Colores de la paleta profesional
+        Color ColorPrimario = Color.FromArgb(44, 62, 80);    // Azul oscuro (Midnight Blue)
+        Color ColorExito = Color.FromArgb(39, 174, 96);      // Verde Esmeralda
+        Color ColorPeligro = Color.FromArgb(192, 57, 43);    // Rojo Alizarin
+        Color ColorInfo = Color.FromArgb(52, 152, 219);      // Azul claro (Peter River)
+        Color ColorFondo = Color.FromArgb(236, 240, 241);    // Gris muy claro (Clouds)
 
         public MainForm()
         {
-            // Configurar la Ventana Principal (Formulario)
-            this.Text = "Sistema de Estacionamiento";
-            this.Size = new Size(580, 420); // Ancho aumentado para acomodar el nuevo botón
+            // Configuración de la Ventana
+            this.Text = "Parking Control Pro";
+            this.Size = new Size(800, 500);
+            this.BackColor = ColorFondo;
+            this.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
 
-            // Crear Controles
-            Label lblPatente = new Label() { Text = "Patente:", Location = new Point(20, 25), AutoSize = true };
-            txtPatente = new TextBox() { Location = new Point(80, 22), Width = 110, CharacterCasing = CharacterCasing.Upper };
+            // --- PANEL DE CABECERA ---
+            pnlHeader = new Panel();
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.Height = 60;
+            pnlHeader.BackColor = ColorPrimario;
 
-            btnIngresar = new Button() { Text = "Ingresar", Location = new Point(210, 20), Width = 85, BackColor = Color.LightGreen };
+            Label lblTitulo = new Label();
+            lblTitulo.Text = "SISTEMA DE GESTIÓN DE ESTACIONAMIENTO";
+            lblTitulo.ForeColor = Color.White;
+            lblTitulo.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            lblTitulo.AutoSize = false;
+            lblTitulo.TextAlign = ContentAlignment.MiddleCenter;
+            lblTitulo.Dock = DockStyle.Fill;
+            pnlHeader.Controls.Add(lblTitulo);
+
+            // --- CONTROLES DE ENTRADA (Grupo superior) ---
+            Label lblPatente = new Label() { Text = "PATENTE:", Location = new Point(30, 85), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            txtPatente = new TextBox() { Location = new Point(30, 105), Width = 120, Font = new Font("Segoe UI", 12F), CharacterCasing = CharacterCasing.Upper };
+
+            Label lblTipo = new Label() { Text = "TIPO DE VEHÍCULO:", Location = new Point(170, 85), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            cmbTipoVehiculo = new ComboBox() { Location = new Point(170, 105), Width = 130, Font = new Font("Segoe UI", 10F), DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbTipoVehiculo.Items.AddRange(new string[] { "Auto", "Moto", "Camioneta", "Camión" });
+            cmbTipoVehiculo.SelectedIndex = 0;
+
+            // --- BOTONES ESTILIZADOS ---
+            btnIngresar = CrearBoton("INGRESAR", 320, 103, ColorExito);
             btnIngresar.Click += BtnIngresar_Click;
 
-            btnRetirar = new Button() { Text = "Retirar", Location = new Point(305, 20), Width = 85, BackColor = Color.LightCoral };
+            btnRetirar = CrearBoton("RETIRAR", 440, 103, ColorPeligro);
             btnRetirar.Click += BtnRetirar_Click;
 
-            // CONFIGURACIÓN DE COBROS DEL DIA
-            btnReporte = new Button() { Text = "Cobros del Día", Location = new Point(405, 20), Width = 130, BackColor = Color.LightSkyBlue };
+            btnReporte = CrearBoton("CAJA DIARIA", 630, 103, ColorInfo);
+            btnReporte.Width = 120;
             btnReporte.Click += BtnReporte_Click;
 
-            gridVehiculos = new DataGridView() { 
-                Location = new Point(20, 70), 
-                Size = new Size(520, 250), 
-                ReadOnly = true, 
-                AllowUserToAddRows = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+            // --- DATA GRID VIEW (TABLA) ---
+            gridVehiculos = new DataGridView();
+            gridVehiculos.Location = new Point(30, 160);
+            gridVehiculos.Size = new Size(720, 240);
+            gridVehiculos.BackgroundColor = Color.White;
+            gridVehiculos.BorderStyle = BorderStyle.None;
+            gridVehiculos.AllowUserToAddRows = false;
+            gridVehiculos.ReadOnly = true;
+            gridVehiculos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            gridVehiculos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            gridVehiculos.RowHeadersVisible = false;
+            gridVehiculos.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            gridVehiculos.EnableHeadersVisualStyles = false; // Permite cambiar color al encabezado
+
+            // Estilo del encabezado
+            gridVehiculos.ColumnHeadersHeight = 40;
+            gridVehiculos.ColumnHeadersDefaultCellStyle.BackColor = ColorPrimario;
+            gridVehiculos.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            gridVehiculos.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            gridVehiculos.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+            // Estilo de las celdas
+            gridVehiculos.DefaultCellStyle.SelectionBackColor = Color.FromArgb(189, 195, 199);
+            gridVehiculos.DefaultCellStyle.SelectionForeColor = Color.Black;
+            gridVehiculos.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(242, 243, 244);
+            
+            gridVehiculos.CellClick += GridVehiculos_CellClick;
+
+            // --- MENSAJES DE ESTADO ---
+            lblMensaje = new Label() { 
+                Location = new Point(30, 420), 
+                Size = new Size(720, 30),
+                Text = "Listo para operar.",
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                ForeColor = ColorPrimario
             };
-           gridVehiculos.CellClick += GridVehiculos_CellClick;
 
-        lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
-        lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
-            lblMensaje = new Label() { Location = new Point(20, 335), AutoSize = true, ForeColor = Color.DarkBlue };
-
-            // Agregar controles a la ventana
+            // Agregar controles al Form
+            this.Controls.Add(pnlHeader);
             this.Controls.Add(lblPatente);
             this.Controls.Add(txtPatente);
+            this.Controls.Add(lblTipo);
+            this.Controls.Add(cmbTipoVehiculo);
             this.Controls.Add(btnIngresar);
             this.Controls.Add(btnRetirar);
-            this.Controls.Add(btnReporte); // Agregado a la interfaz
+            this.Controls.Add(btnReporte);
             this.Controls.Add(gridVehiculos);
             this.Controls.Add(lblMensaje);
 
-            // Cargar los datos al abrir
-            CargarVehiculos();
+            ActualizarTabla();
         }
-        //METODO INGRESA
+
+        // Función ayudante para crear botones con estilo uniforme
+        private Button CrearBoton(string texto, int x, int y, Color colorFondo)
+        {
+            Button btn = new Button();
+            btn.Text = texto;
+            btn.Location = new Point(x, y);
+            btn.Size = new Size(110, 35);
+            btn.BackColor = colorFondo;
+            btn.ForeColor = Color.White;
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Cursor = Cursors.Hand;
+            btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            return btn;
+        }
 
         private void BtnIngresar_Click(object sender, EventArgs e)
         {
             string patente = txtPatente.Text.Trim();
-            if (string.IsNullOrEmpty(patente))
-            {
-                lblMensaje.Text = "Por favor, ingrese una patente.";
-                return;
-            }
+            if (string.IsNullOrEmpty(patente)) { lblMensaje.Text = "⚠ Error: Debe ingresar una patente."; return; }
 
-            using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
+            string tipo = cmbTipoVehiculo.SelectedItem.ToString();
+            try
             {
-                try
-                {
-                    conexion.Open();
-                    string query = "INSERT INTO Vehiculos (Patente, HoraEntrada) VALUES (@patente, @horaEntrada)";
-                    using (MySqlCommand cmd = new MySqlCommand(query, conexion))
-                    {
-                        cmd.Parameters.AddWithValue("@patente", patente);
-                        cmd.Parameters.AddWithValue("@horaEntrada", DateTime.Now);
-                        cmd.ExecuteNonQuery();
-                    }
-                    lblMensaje.Text = $"Vehículo {patente} ingresado correctamente.";
-                    txtPatente.Clear();
-                    CargarVehiculos();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: " + ex.Message, "Error de Base de Datos", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                db.IngresarVehiculo(patente, tipo);
+                lblMensaje.Text = $"✅ {tipo} con patente {patente} ingresado correctamente.";
+                txtPatente.Clear();
+                ActualizarTabla();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-//METODO RETIRAR
+
         private void BtnRetirar_Click(object sender, EventArgs e)
         {
             string patente = txtPatente.Text.Trim();
-            if (string.IsNullOrEmpty(patente))
+            if (string.IsNullOrEmpty(patente)) { lblMensaje.Text = "⚠ Error: Seleccione o escriba una patente."; return; }
+
+            try
             {
-                lblMensaje.Text = "Ingrese la patente a retirar.";
-                return;
+                string ticket = db.RetirarVehiculo(patente);
+                MessageBox.Show(ticket, "Ticket de Salida", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                lblMensaje.Text = $"💸 Vehículo {patente} retirado y cobrado.";
+                txtPatente.Clear();
+                ActualizarTabla();
             }
-
-            using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
+            catch (Exception ex)
             {
-                try
-                {
-                    conexion.Open();
-                    string selectQuery = "SELECT Id, HoraEntrada FROM Vehiculos WHERE Patente = @patente AND Estado = 'Estacionado'";
-                    int idVehiculo = 0;
-                    DateTime horaEntrada = DateTime.MinValue;
-
-                    using (MySqlCommand selectCmd = new MySqlCommand(selectQuery, conexion))
-                    {
-                        selectCmd.Parameters.AddWithValue("@patente", patente);
-                        using (MySqlDataReader reader = selectCmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                idVehiculo = reader.GetInt32("Id");
-                                horaEntrada = reader.GetDateTime("HoraEntrada");
-                            }
-                            else
-                            {
-                                lblMensaje.Text = "Vehículo no encontrado o ya retirado.";
-                                return;
-                            }
-                        }
-                    }
-//METODO CALCULO HORAS
-                    DateTime horaSalida = DateTime.Now;
-                    double horasTotales = Math.Ceiling((horaSalida - horaEntrada).TotalHours);
-                    if (horasTotales == 0) horasTotales = 1;
-
-                    decimal costoTotal = (decimal)horasTotales * TarifaPorHora;
-
-                    string updateQuery = "UPDATE Vehiculos SET HoraSalida = @horaSalida, CostoTotal = @costo, Estado = 'Retirado' WHERE Id = @id";
-                    using (MySqlCommand updateCmd = new MySqlCommand(updateQuery, conexion))
-                    {
-                        updateCmd.Parameters.AddWithValue("@horaSalida", horaSalida);
-                        updateCmd.Parameters.AddWithValue("@costo", costoTotal);
-                        updateCmd.Parameters.AddWithValue("@id", idVehiculo);
-                        updateCmd.ExecuteNonQuery();
-                    }
-
-                    string ticket = $"--- TICKET DE SALIDA ---\n\nPatente: {patente}\nEntrada: {horaEntrada}\nSalida: {horaSalida}\nTiempo facturado: {horasTotales} hora(s)\n\nTOTAL A PAGAR: ${costoTotal}";
-                    MessageBox.Show(ticket, "Ticket Generado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    lblMensaje.Text = $"Vehículo {patente} retirado. Cobro: ${costoTotal}";
-                    txtPatente.Clear();
-                    CargarVehiculos();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: " + ex.Message, "Error de Base de Datos", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show(ex.Message, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
-        // EVENTO QUE ABRE LA NUEVA PESTAÑA/VENTANA
         private void BtnReporte_Click(object sender, EventArgs e)
         {
-            // Instanciamos la nueva ventana pasándole la conexión a la BD
-            ReporteForm ventanaReporte = new ReporteForm(cadenaConexion);
-            // ShowDialog() hace que se abra como una ventana emergente obligatoria (modal)
-            ventanaReporte.ShowDialog(); 
+            ReporteForm ventanaReporte = new ReporteForm(db);
+            ventanaReporte.ShowDialog();
         }
-    
-//EVENTO QUE SELECCIONA PATENTE
-private void GridVehiculos_CellClick(object sender, DataGridViewCellEventArgs e)
-    {
-        if (e.RowIndex >= 0)
+
+        private void GridVehiculos_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            DataGridViewRow fila = gridVehiculos.Rows[e.RowIndex];
-            txtPatente.Text = fila.Cells["Patente"].Value.ToString();
-        }
-    }
-    
-        private void CargarVehiculos()
-        {
-            using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
+            if (e.RowIndex >= 0)
             {
-                try
-                {
-                    conexion.Open();
-                    string query = "SELECT Patente, HoraEntrada AS 'Hora de Ingreso' FROM Vehiculos WHERE Estado = 'Estacionado'";
-                    using (MySqlDataAdapter adapter = new MySqlDataAdapter(query, conexion))
-                    {
-                        DataTable dt = new DataTable();
-                        adapter.Fill(dt);
-                        gridVehiculos.DataSource = dt;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    lblMensaje.Text = "Error al cargar los vehículos: " + ex.Message;
-                }
+                txtPatente.Text = gridVehiculos.Rows[e.RowIndex].Cells["Patente"].Value.ToString();
             }
         }
+
+        private void ActualizarTabla()
+        {
+            gridVehiculos.DataSource = db.ObtenerVehiculosEstacionados();
+        }
     }
 
-
-
-    //  VENTANA DE REPORTES DEL DÍA
-
+    // --- VENTANA DE REPORTE ESTILIZADA ---
     public class ReporteForm : Form
     {
-        public ReporteForm(string conexionString)
+        public ReporteForm(GestorBaseDatos db)
         {
-            // Configurar esta ventana secundaria
-            this.Text = "Reporte de Caja Diario";
-            this.Size = new Size(320, 220);
-            this.StartPosition = FormStartPosition.CenterParent; // Se centra respecto a la ventana principal
-            this.FormBorderStyle = FormBorderStyle.FixedDialog; // Evita que el usuario le cambie el tamaño
+            this.Text = "Balance Diario";
+            this.Size = new Size(350, 250);
+            this.BackColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
-            this.MinimizeBox = false;
 
-            // Controles de diseño
-            Label lblTitulo = new Label() { Text = "RECAUDACIÓN DE HOY", Location = new Point(20, 15), AutoSize = true, Font = new Font("Arial", 11, FontStyle.Bold), ForeColor = Color.DarkSlateGray };
-            Label lblTotal = new Label() { Location = new Point(20, 55), AutoSize = true, Font = new Font("Arial", 14, FontStyle.Bold), ForeColor = Color.DarkGreen };
-            Label lblCantidad = new Label() { Location = new Point(20, 95), AutoSize = true, Font = new Font("Arial", 10, FontStyle.Regular) };
+            Panel pnlBorde = new Panel() { Dock = DockStyle.Top, Height = 10, BackColor = Color.FromArgb(52, 152, 219) };
             
-            Button btnCerrar = new Button() { Text = "Cerrar", Location = new Point(110, 140), Width = 80 };
-            btnCerrar.Click += (s, ev) => this.Close(); // Cierra esta pestañita
+            Label lblTitulo = new Label() { 
+                Text = "CAJA DEL DÍA", 
+                Location = new Point(20, 30), 
+                AutoSize = true, 
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(44, 62, 80) 
+            };
 
-            // Consultar la Base de Datos para traer las estadísticas del día
-            using (MySqlConnection conexion = new MySqlConnection(conexionString))
+            Label lblTotal = new Label() { 
+                Location = new Point(20, 80), 
+                Size = new Size(300, 40),
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold), 
+                ForeColor = Color.FromArgb(39, 174, 96) 
+            };
+
+            Label lblCantidad = new Label() { 
+                Location = new Point(20, 130), 
+                AutoSize = true, 
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                ForeColor = Color.Gray
+            };
+            
+            Button btnCerrar = new Button() { 
+                Text = "ENTENDIDO", 
+                Location = new Point(100, 170), 
+                Width = 150, 
+                Height = 35,
+                BackColor = Color.FromArgb(44, 62, 80),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnCerrar.Click += (s, ev) => this.Close();
+
+            try
             {
-                try
-                {
-                    conexion.Open();
-                    // SUM calcula el dinero total, COUNT cuenta cuántos autos salieron hoy (CURDATE())
-                    string query = "SELECT SUM(CostoTotal) AS Total, COUNT(Id) AS Cantidad FROM Vehiculos WHERE Estado = 'Retirado' AND DATE(HoraSalida) = CURDATE()";
-                    
-                    using (MySqlCommand cmd = new MySqlCommand(query, conexion))
-                    {
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                // Validamos si es NULL (por si todavía no cobraste nada hoy)
-                                decimal total = reader.IsDBNull(reader.GetOrdinal("Total")) ? 0.00m : reader.GetDecimal("Total");
-                                int cantidad = reader.GetInt32("Cantidad");
-
-                                lblTotal.Text = $"Total: ${total}";
-                                lblCantidad.Text = $"Vehículos retirados hoy: {cantidad}";
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    lblTotal.Text = "Error de conexión";
-                    lblCantidad.Text = ex.Message;
-                }
+                db.ObtenerReporteDiario(out decimal total, out int cantidad);
+                lblTotal.Text = $"$ {total:N2}"; // Formato moneda
+                lblCantidad.Text = $"Total de vehículos retirados: {cantidad}";
             }
+            catch { lblTotal.Text = "$ 0.00"; }
 
-            // Agregar elementos visuales a la pestañita
+            this.Controls.Add(pnlBorde);
             this.Controls.Add(lblTitulo);
             this.Controls.Add(lblTotal);
             this.Controls.Add(lblCantidad);
@@ -271,8 +262,6 @@ private void GridVehiculos_CellClick(object sender, DataGridViewCellEventArgs e)
         }
     }
 
-
-    // Punto de entrada de la aplicación
     static class Program
     {
         [STAThread]
