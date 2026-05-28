@@ -135,5 +135,37 @@ namespace SistemaEstacionamientoGUI
                 }
             }
         }
+        //nuevo 28/05
+        public void ObtenerReporteHistorico(DateTime desde, DateTime hasta, out decimal total, out int cantidad)
+        {
+            total = 0.00m;
+            cantidad = 0;
+
+            using (MySqlConnection conexion = new MySqlConnection(cadenaConexion))
+            {
+                conexion.Open();
+                
+                // Truco profesional: Al día "hasta" le sumamos 1 día y le restamos 1 segundo 
+                // para que incluya hasta las 23:59:59 de ese día y no corte al mediodía.
+                DateTime hastaFinal = hasta.Date.AddDays(1).AddTicks(-1);
+
+                string query = "SELECT SUM(CostoTotal) AS Total, COUNT(Id) AS Cantidad FROM Vehiculos WHERE Estado = 'Retirado' AND HoraSalida >= @desde AND HoraSalida <= @hasta";
+                
+                using (MySqlCommand cmd = new MySqlCommand(query, conexion))
+                {
+                    cmd.Parameters.AddWithValue("@desde", desde.Date);
+                    cmd.Parameters.AddWithValue("@hasta", hastaFinal);
+
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            total = reader.IsDBNull(reader.GetOrdinal("Total")) ? 0.00m : reader.GetDecimal("Total");
+                            cantidad = reader.GetInt32("Cantidad");
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -37,7 +37,7 @@ namespace SistemaEstacionamientoGUI
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
 
-            // --- PANEL DE CABECERA ---
+            // --- PANEL PrimaRIO ---
             pnlHeader = new Panel() { Dock = DockStyle.Top, Height = 60, BackColor = ColorPrimario };
             Label lblTitulo = new Label() { 
                 Text = "SISTEMA DE GESTIÓN DE ESTACIONAMIENTO", 
@@ -62,9 +62,16 @@ namespace SistemaEstacionamientoGUI
             btnRetirar = CrearBoton("RETIRAR", 440, 103, ColorPeligro);
             btnRetirar.Click += BtnRetirar_Click;
 
-            btnReporte = CrearBoton("CAJA DIARIA", 630, 103, ColorInfo);
-            btnReporte.Width = 120;
+            btnReporte = CrearBoton("CAJA DIARIA", 560, 103, ColorInfo);
+            btnReporte.Width = 100;
             btnReporte.Click += BtnReporte_Click;
+
+            Button btnHistorial = CrearBoton("HISTORIAL", 670, 103, Color.FromArgb(142, 68, 173)); // Botón morado
+            btnHistorial.Width = 100;
+            btnHistorial.Click += (s, e) => {
+                ReporteHistoricoForm ventanaHistorico = new ReporteHistoricoForm(db);
+                ventanaHistorico.ShowDialog();
+            };
 
             // --- TABLA ---
             gridVehiculos = new DataGridView() { 
@@ -96,20 +103,21 @@ namespace SistemaEstacionamientoGUI
             this.Controls.Add(btnReporte);
             this.Controls.Add(gridVehiculos);
             this.Controls.Add(lblMensaje);
+            this.Controls.Add(btnHistorial);
 
             // Carga inicial
             ActualizarTabla();
 
             // === TEMPORIZADOR DE ACTUALIZACIÓN AUTOMÁTICA ===
             System.Windows.Forms.Timer timerRefresco = new System.Windows.Forms.Timer();
-            timerRefresco.Interval = 5000; // Refresca cada 5 segundos
+            timerRefresco.Interval = 5000; // (Refresca cada 5 segundos)
             timerRefresco.Tick += (s, ev) => ActualizarTabla();
             timerRefresco.Start();
         }
 
-        // =========================================================
+      
         // MÉTODOS DE LA INTERFAZ
-        // =========================================================
+    
 
         private Button CrearBoton(string texto, int x, int y, Color colorFondo)
         {
@@ -212,7 +220,7 @@ namespace SistemaEstacionamientoGUI
             }
         }
     }
-
+//nuevo 28/05
     public class ReporteForm : Form
     {
         public ReporteForm(GestorBaseDatos db)
@@ -242,6 +250,62 @@ namespace SistemaEstacionamientoGUI
             this.Controls.Add(lblTotal);
             this.Controls.Add(lblCantidad);
             this.Controls.Add(btnCerrar);
+        }
+    }
+    public class ReporteHistoricoForm : Form
+    {
+        public ReporteHistoricoForm(GestorBaseDatos db)
+        {
+            this.Text = "Reporte Histórico";
+            this.Size = new Size(380, 350);
+            this.BackColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+
+            // Un pequeño borde superior morado para distinguirlo del reporte diario
+            Panel pnlBorde = new Panel() { Dock = DockStyle.Top, Height = 10, BackColor = Color.FromArgb(142, 68, 173) }; 
+            Label lblTitulo = new Label() { Text = "BALANCE HISTÓRICO", Location = new Point(20, 30), AutoSize = true, Font = new Font("Segoe UI", 14F, FontStyle.Bold), ForeColor = Color.FromArgb(44, 62, 80) };
+
+            // Calendario "Desde"
+            Label lblDesde = new Label() { Text = "Desde fecha:", Location = new Point(20, 80), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            DateTimePicker dtpDesde = new DateTimePicker() { Location = new Point(20, 100), Width = 140, Format = DateTimePickerFormat.Short };
+
+            // Calendario "Hasta"
+            Label lblHasta = new Label() { Text = "Hasta fecha:", Location = new Point(200, 80), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            DateTimePicker dtpHasta = new DateTimePicker() { Location = new Point(200, 100), Width = 140, Format = DateTimePickerFormat.Short };
+
+            // Botón de cálculo
+            Button btnCalcular = new Button() { Text = "CALCULAR PERÍODO", Location = new Point(20, 150), Width = 320, Height = 35, BackColor = Color.FromArgb(142, 68, 173), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9F, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnCalcular.FlatAppearance.BorderSize = 0;
+
+            // Etiquetas de resultados
+            Label lblTotal = new Label() { Location = new Point(20, 205), Size = new Size(320, 40), Font = new Font("Segoe UI", 20F, FontStyle.Bold), ForeColor = Color.FromArgb(39, 174, 96), TextAlign = ContentAlignment.MiddleCenter, Text = "$ 0.00" };
+            Label lblCantidad = new Label() { Location = new Point(20, 255), Size = new Size(320, 20), Font = new Font("Segoe UI", 10F, FontStyle.Regular), ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleCenter, Text = "Total de vehículos: 0" };
+
+            // Evento del botón
+            btnCalcular.Click += (s, ev) =>
+            {
+                if (dtpDesde.Value > dtpHasta.Value)
+                {
+                    MessageBox.Show("La fecha 'Desde' no puede ser mayor que 'Hasta'.", "Error de fechas", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                db.ObtenerReporteHistorico(dtpDesde.Value, dtpHasta.Value, out decimal total, out int cantidad);
+                lblTotal.Text = $"$ {total:N2}";
+                lblCantidad.Text = $"Total de vehículos retirados: {cantidad}";
+            };
+
+            this.Controls.Add(pnlBorde);
+            this.Controls.Add(lblTitulo);
+            this.Controls.Add(lblDesde);
+            this.Controls.Add(dtpDesde);
+            this.Controls.Add(lblHasta);
+            this.Controls.Add(dtpHasta);
+            this.Controls.Add(btnCalcular);
+            this.Controls.Add(lblTotal);
+            this.Controls.Add(lblCantidad);
         }
     }
 
